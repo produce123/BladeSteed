@@ -17,14 +17,17 @@ import { assert, eq, run, test } from './harness.mjs';
 
 const SHOTS = 'tests/screenshots';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const server = await startServer(0);
+
+// 默认在本地起服务器测源码；设了 BASE_URL 就直接测线上（用来验证部署结果）
+const server = process.env.BASE_URL ? null : await startServer(0);
+const base = process.env.BASE_URL || server.url;
 const opened = [];
 
 async function boot({ width = 430, height = 932, mobile = true } = {}) {
   const page = await Page.launch({ headless: true, width, height, mobile });
   opened.push(page);
-  await page.goto(server.url);
-  await page.waitFor('return !!window.bladeSteed', 10000, '页面启动');
+  await page.goto(base);
+  await page.waitFor('return !!window.bladeSteed', 15000, '页面启动');
   // 测试环境没声音也别浪费 CPU；特效保留（我们要检查它有没有真的画出来）
   await page.eval('window.bladeSteed.audio.enabled = false; return 1');
   return page;
@@ -400,6 +403,6 @@ await run(async () => {
       /* 忽略 */
     }
   }
-  await server.close();
+  if (server) await server.close();
   if (!existsSync(SHOTS)) mkdirSync(SHOTS, { recursive: true });
 });
