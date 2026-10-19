@@ -1,0 +1,8 @@
+# 依赖与构建产物（本项目零依赖、零构建，正常情况下不会产生这些目录）
+node_modules/
+dist/
+.serve/
+*.log
+
+# 测试跑出来的截图，不进仓库
+tests/screenshots/

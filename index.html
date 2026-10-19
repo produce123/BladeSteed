@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#0e1116" />
+    <meta name="description" content="刀马 BladeSteed — 2–4 人纯前端 WebRTC 联机网页小游戏，无需服务器，可直接部署 GitHub Pages。" />
+    <title>刀马 BladeSteed · 2–4 人联机猜拳对战</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🐴</text></svg>" />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- ============================ 首页 ============================ -->
+      <section class="screen is-active" id="screen-home">
+        <div class="home-hero">
+          <h1 class="logo">刀马</h1>
+          <p class="logo-sub">BladeSteed · 2–4 人联机猜拳对战</p>
+        </div>
+
+        <div class="card name-card">
+          <label class="field-label" for="input-name">你的名字（单字）</label>
+          <div class="name-row">
+            <input id="input-name" class="name-input" type="text" maxlength="2" inputmode="text" autocomplete="off" placeholder="字" />
+            <div class="name-quick" id="name-quick"></div>
+          </div>
+          <p class="hint" id="name-hint">头像就是你这个字，房间里所有人都看得到。</p>
+        </div>
+
+        <nav class="home-menu">
+          <button class="big-btn primary" id="btn-go-local">
+            <span class="big-btn-title">人机对局</span>
+            <span class="big-btn-sub">单人也能玩 · 可选 2 / 3 / 4 人局</span>
+          </button>
+          <button class="big-btn" id="btn-go-online">
+            <span class="big-btn-title">在线对局</span>
+            <span class="big-btn-sub">6 位房间号 · 纯 P2P，无需服务器</span>
+          </button>
+          <button class="big-btn" id="btn-go-rules">
+            <span class="big-btn-title">游戏规则</span>
+            <span class="big-btn-sub">一条一条写清楚</span>
+          </button>
+        </nav>
+
+        <div class="toggles">
+          <button class="toggle" id="toggle-sound" aria-pressed="true">🔊 音效</button>
+          <button class="toggle" id="toggle-fx" aria-pressed="true">✨ 特效</button>
+        </div>
+      </section>
+
+      <!-- ============================ 人机设置 ============================ -->
+      <section class="screen" id="screen-local">
+        <div class="page-head">
+          <button class="icon-btn back" data-back="screen-home">‹</button>
+          <h2>人机对局</h2>
+        </div>
+        <div class="card">
+          <p class="field-label">本局人数</p>
+          <div class="seg" id="local-size">
+            <button class="seg-btn" data-size="2">2 人</button>
+            <button class="seg-btn" data-size="3">3 人</button>
+            <button class="seg-btn is-on" data-size="4">4 人</button>
+          </div>
+          <p class="hint">除你之外的席位由 AI 补齐。AI 与你看到的信息完全一样，不会针对你，也不会放水。</p>
+          <button class="big-btn primary" id="btn-local-start">
+            <span class="big-btn-title">开始对局</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ============================ 在线 ============================ -->
+      <section class="screen" id="screen-online">
+        <div class="page-head">
+          <button class="icon-btn back" data-back="screen-home">‹</button>
+          <h2>在线对局</h2>
+        </div>
+
+        <div class="card">
+          <p class="field-label">创建房间</p>
+          <p class="hint">开好房把 6 位房间号发给朋友，他们输入同样的号码就能进来。</p>
+          <button class="big-btn primary" id="btn-create-room">
+            <span class="big-btn-title">创建房间</span>
+          </button>
+        </div>
+
+        <div class="card">
+          <p class="field-label">加入房间</p>
+          <input id="input-room" class="room-input" type="text" maxlength="6" inputmode="latin" autocomplete="off" placeholder="6 位房间号" />
+          <button class="big-btn" id="btn-join-room">
+            <span class="big-btn-title">加入</span>
+          </button>
+        </div>
+
+        <div class="card net-card">
+          <p class="field-label">连接状态</p>
+          <div class="net-status" id="net-status">还没开始连接</div>
+          <p class="hint">
+            优先走 WebRTC 点对点直连；网络受限（对称 NAT、同一局域网握手失败等）时自动降级为<b>中转模式</b>，
+            照样能玩，只是延迟略高一点。
+          </p>
+        </div>
+      </section>
+
+      <!-- ============================ 大厅 ============================ -->
+      <section class="screen" id="screen-lobby">
+        <div class="page-head">
+          <button class="icon-btn back" id="btn-lobby-leave">‹</button>
+          <h2>房间</h2>
+        </div>
+
+        <div class="card room-card">
+          <p class="field-label">房间号</p>
+          <div class="room-code" id="lobby-code">------</div>
+          <button class="ghost-btn" id="btn-copy-room">复制房间号</button>
+          <div class="net-status" id="lobby-net"></div>
+        </div>
+
+        <div class="card">
+          <div class="row-between">
+            <p class="field-label">房间里的人（<span id="lobby-count">1</span>/4）</p>
+            <button class="ghost-btn" id="btn-lobby-add-ai">＋ 添加 AI 补位</button>
+          </div>
+          <div class="avatar-grid" id="lobby-avatars"></div>
+          <p class="hint">点别人的头像可以扔 🥚 鸡蛋 / 🌸 鲜花。</p>
+        </div>
+
+        <button class="big-btn primary" id="btn-lobby-start">
+          <span class="big-btn-title">开始对局</span>
+          <span class="big-btn-sub" id="lobby-start-sub">至少 2 人</span>
+        </button>
+      </section>
+
+      <!-- ============================ 牌桌 ============================ -->
+      <section class="screen board" id="screen-board">
+        <div class="board-top">
+          <button class="icon-btn" id="btn-board-menu">☰</button>
+          <div class="board-status">
+            <span id="board-phase" class="pill">猜拳</span>
+            <span id="board-round" class="pill ghost">第 1 回合</span>
+          </div>
+          <div class="timer" id="board-timer"><span>10</span></div>
+        </div>
+
+        <div class="map-wrap" id="map-wrap">
+          <svg id="map" viewBox="0 0 400 340" preserveAspectRatio="xMidYMid meet" aria-label="战场地图"></svg>
+        </div>
+
+        <div class="board-bottom">
+          <div class="log-strip" id="board-log"></div>
+          <div class="action-panel" id="board-panel"></div>
+        </div>
+      </section>
+
+      <!-- ============================ 规则 ============================ -->
+      <section class="screen" id="screen-rules">
+        <div class="page-head">
+          <button class="icon-btn back" data-back="screen-home">‹</button>
+          <h2>游戏规则</h2>
+        </div>
+
+        <div class="rules">
+          <h3>一、基础设定</h3>
+          <ul>
+            <li>支持 <b>2 / 3 / 4 人</b>混战，开局<b>随机分配座位</b>（1–4 号）。</li>
+            <li>每人固定 <b>10 滴血</b>，血量 ≤ 0 立即出局。</li>
+            <li>开局所有人都在<b>自己的城内</b>，可以直接出城，没有任何前置条件。</li>
+            <li>地图上 4 座城永久存在，出局者的城也照样能进。</li>
+          </ul>
+
+          <h3>二、装备（永久持有，只在城内能买）</h3>
+          <ul>
+            <li>🐴 <b>买马</b>：解锁【踹】。<b>花 1 步行动</b>，买了就终身有效。</li>
+            <li>🔪 <b>买刀</b>：解锁【刀】。同样花 1 步行动。</li>
+          </ul>
+
+          <h3>三、每回合猜拳</h3>
+          <ul>
+            <li>每回合所有人<b>同时</b>出石头 / 剪刀 / 布。</li>
+            <li><b>只有 1 人获胜</b>：他一个人拿到 <b>2 步</b>行动。</li>
+            <li><b>≥2 人获胜</b>：每人 <b>1 步</b>，并进入「小猜拳」——逐轮淘汰出唯一的决胜者，由他决定这几个人的<b>行动先后顺序</b>。</li>
+            <li><b>无人获胜</b>（手势只有 1 种、或者三种齐全循环克制）：重新猜拳。</li>
+            <li>出拳<b>秘密提交</b>，全部到齐才一起揭晓。超时未出拳由系统随机代出。</li>
+          </ul>
+
+          <h3>四、行动（每 1 步只能做 1 个操作，2 步可自由组合）</h3>
+          <ul>
+            <li>🐴 <b>买马</b> / 🔪 <b>买刀</b>：仅限城内。</li>
+            <li>🚶 <b>出城</b>：城内 → 野外。</li>
+            <li>🏯 <b>进城</b>：野外 → 指定任意一座城（可以是自己的，也可以是别人的、甚至出局者的）。</li>
+            <li>🔪 <b>刀</b>（需已买刀）：指定一名<b>同一位置</b>的玩家，扣 <b>1</b> 滴血。城内、城外通用。</li>
+            <li>🐴 <b>踹</b>（需已买马）：指定一名<b>与你同在一座城内</b>的玩家，扣 <b>3</b> 滴血，并把他<b>强制踢到野外</b>。</li>
+            <li>✋ <b>结束行动</b>：主动放弃剩余的步数。</li>
+          </ul>
+
+          <h3>五、胜负</h3>
+          <ul>
+            <li>血量 ≤ 0 立即淘汰出局。</li>
+            <li>场上最后存活的一名玩家获胜，可以一键重新开局。</li>
+            <li>玩家中途退出或断线，立即判定出局。</li>
+          </ul>
+
+          <h3>六、联机说明</h3>
+          <ul>
+            <li>纯前端 WebRTC 点对点，没有任何服务器，直接部署 GitHub Pages 就能玩。</li>
+            <li>6 位房间号匹配；直连失败会自动降级为<b>中转模式</b>，照样能打完。</li>
+            <li><b>房主是唯一的权威状态机</b>：只有房主跑游戏逻辑，其他人只发送操作，改前端改不出任何优势。</li>
+            <li>所有人看到的血量、装备、位置、行动顺序都来自房主广播，永远一致。</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <!-- 头像互动菜单 -->
+    <div class="popover" id="popover" hidden>
+      <div class="popover-name" id="popover-name"></div>
+      <div class="popover-actions" id="popover-actions"></div>
+      <button class="pop-cancel" id="popover-cancel">取消</button>
+    </div>
+
+    <!-- 对局菜单 -->
+    <div class="sheet" id="board-menu" hidden>
+      <div class="sheet-inner">
+        <h3>对局菜单</h3>
+        <button class="sheet-btn" id="menu-restart">🔄 重新开局</button>
+        <button class="sheet-btn" id="menu-sound">🔊 音效：开</button>
+        <button class="sheet-btn" id="menu-fx">✨ 特效：开</button>
+        <button class="sheet-btn danger" id="menu-leave">🚪 退出房间</button>
+        <button class="sheet-btn" id="menu-close">取消</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+    <div class="blocker" id="blocker" hidden><div class="blocker-inner"><div class="spinner"></div><p id="blocker-text">连接中…</p></div></div>
+
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>

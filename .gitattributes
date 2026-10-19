@@ -1,0 +1,4 @@
+# 全仓库统一用 LF：静态站点文件本来就该是 LF，也让 Windows/Linux 检出结果一致
+* text=auto eol=lf
+*.png binary
+*.ico binary
